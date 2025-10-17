@@ -1,0 +1,37 @@
+- name: Instalar y configurar DHCP
+  hosts: dhcp
+  become: yes
+  tasks:
+    - name: Instalar servidor DHCP
+      apt:
+        name: isc-dhcp-server
+        state: present
+        update_cache: yes
+
+    - name: Crear archivo de configuración del DHCP
+      copy:
+        dest: /etc/dhcp/dhcpd.conf
+        content: |
+          default-lease-time 600;
+          max-lease-time 7200;
+          authoritative;
+          
+          subnet 192.168.57.0 netmask 255.255.255.0 {
+            range 192.168.57.100 192.168.57.200;
+            option routers 192.168.57.1;
+            option domain-name-servers 8.8.8.8;
+            option subnet-mask 255.255.255.0;
+          }
+
+    - name: Configurar interfaz para DHCP
+      lineinfile:
+        path: /etc/default/isc-dhcp-server
+        regexp: '^INTERFACESv4='
+        line: 'INTERFACESv4="eth1"'
+        state: present
+
+    - name: Iniciar servicio DHCP
+      service:
+        name: isc-dhcp-server
+        state: started
+        enabled: yes
